@@ -5,14 +5,15 @@ typedef void*(*thread_func_t)(void*);
 
 typedef struct thread_t {
     int thread_id;
-    void *args;
     thread_func_t func;
-    
+    void *args;
+    void *return_value;
+    int join;    
 }thread_t;
 
 
 
 void *create_stack(off_t size, int thread_id);
 
-int thread_create(thread_t *tid, void *thread_func, void *args);
+int thread_create(thread_t *tid, thread_func_t *thread_func, void *args);
 

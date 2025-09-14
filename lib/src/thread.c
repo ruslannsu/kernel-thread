@@ -14,7 +14,11 @@
 
 int *thread_func_wrapper(void *args) {
 	thread_t *thread_srtuct = (thread_t*)(args);
-	(thread_srtuct->func)(thread_srtuct->args);
+	thread_srtuct->func(thread_srtuct->args);
+	while (thread_srtuct->join) {
+		usleep(500);
+	}
+
 	return 0;
 }
 
@@ -56,18 +60,24 @@ int thread_create(thread_t *tid, thread_func_t *thread_func, void *args) {
 	char *stack = create_stack(10, thread_counter);
 
 	thread_t *thread_struct = malloc(sizeof(thread_t));
-	
+
 	thread_struct->args = args;
 	thread_struct->thread_id = thread_counter;
 	thread_struct->func = thread_func;
+	thread_struct->join = 0;
+	thread_struct->return_value = NULL;
 
-	int thread_id = clone(thread_func_wrapper, stack + STACK_SIZE, CLONE_VM |  CLONE_FILES | CLONE_THREAD | CLONE_SIGHAND | SIGCHLD, NULL);
+	int thread_id = clone(thread_func_wrapper, stack + STACK_SIZE, CLONE_VM |  CLONE_FILES | CLONE_THREAD | CLONE_SIGHAND | SIGCHLD, thread_struct);
 	if (thread_id == -1) {
 		printf("create error, %s \n", strerror(errno));
 		return -1;
 	}
 
 	return thread_id;
+}
+
+int thread_join(thread_t *tid) {
+	tid->join = 1;
 }
 
 

@@ -1,2 +1,3 @@
-build/
+/build/
+
 libthread.a

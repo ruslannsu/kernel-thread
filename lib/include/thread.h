@@ -1,9 +1,13 @@
 #include <sys/types.h>
 #define STACK_SIZE 4096 * 2
 
+typedef void*(*thread_func_t)(void*);
 
 typedef struct thread_t {
-    int a;
+    int thread_id;
+    void *args;
+    thread_func_t func;
+    
 }thread_t;
 
 

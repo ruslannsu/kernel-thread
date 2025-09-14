@@ -13,11 +13,12 @@
 
 
 
-void *create_stack(off_t size) {
+void *create_stack(off_t size, int thread_id) {
 	void *stack_ptr;
 	int stack_fd;
-
-	stack_fd = open("./stack", O_RDWR | O_CREAT, 0660);
+	char *stack_f = malloc(30);
+	snprintf(stack_f, sizeof(stack_f), "stack-%d", thread_id);   
+	stack_fd = open(stack_f, O_RDWR | O_CREAT, 0660);
 	if (stack_fd == -1) {
 		printf("stack creation failed %s\n", strerror(errno));
 	}
@@ -33,13 +34,17 @@ void *create_stack(off_t size) {
 	}
 
 	stack_ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, stack_fd, 0);
+	if (stack_ptr == MAP_FAILED) {
+		printf("stack maping failed %s\n", strerror(errno));
+	}
+
 	return stack_ptr;
 }
 
 
 int thread_create(thread_t *tid, void *thread_func, void *args) {
 
-	char *stack = create_stack(10);
+	char *stack = create_stack(10, 3);
 
 	int thread_id = clone(thread_func, stack + STACK_SIZE, CLONE_VM |  CLONE_FILES | CLONE_THREAD | CLONE_SIGHAND | SIGCHLD, NULL);
 	if (thread_id == -1) {
@@ -51,10 +56,6 @@ int thread_create(thread_t *tid, void *thread_func, void *args) {
 }
 
 
-int main() {
-	int t = thread_create(NULL, main, NULL);
-	return 0;
-}
 
 	
 	

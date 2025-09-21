@@ -12,12 +12,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-
-
-
-
-
-
 int thread_func_wrapper(void *args) {
 	thread_t *thread_srtuct = (thread_t*)(args);
 	thread_srtuct->return_value = thread_srtuct->func(thread_srtuct->args);
@@ -60,16 +54,13 @@ int stack_create(off_t size, int thread_id, void **stack_ptr) {
 		return -1;
 	}
 
-	
 	return 0;
 }
 
 
 int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args) {
-
 	static int thread_counter = 0;
 	++thread_counter;
-
 
 	if (thread_func == NULL) {
 		return EINVAL;
@@ -82,7 +73,6 @@ int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args
 	}
 	void *stack_top = (char*)stack_buffer + STACK_SIZE;
 
-
 	thread_t *thread_struct = (thread_t*)(stack_top);
 	thread_struct->args = args;
 	thread_struct->thread_id = thread_counter;
@@ -90,18 +80,22 @@ int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args
 	thread_struct->joined = 0;
 	thread_struct->detached = 0;
 	thread_struct->return_value = NULL;
-
-
-
+	thread_struct->stack_buffer = stack_buffer;
+	
 	int thread_id = clone(thread_func_wrapper, (char*)stack_top - sizeof(thread_t), CLONE_VM |  CLONE_FILES | CLONE_THREAD | CLONE_SIGHAND | SIGCHLD, thread_struct);
 	if (thread_id == -1) {
 		return EINVAL;
 	}
 
 	void *stack_bottom = (char*)stack_top - STACK_SIZE;
-	mprotect(stack_bottom, PAGE_SIZE, PROT_NONE);
+	thread_struct->stack_bottom = stack_bottom;
 
+	err = mprotect(stack_bottom, PAGE_SIZE, PROT_NONE);
+	if (err != 0) {
+		return EAGAIN;
+	}
 	
+
 	*thread_ptr =  (thread_desc)thread_struct;
 
 	return 0;
@@ -125,9 +119,16 @@ int thread_join(thread_t *tid, void **return_value) {
 	while (!tid->exited) {
 		usleep(SLEEP_TIME);
 	}
-
+	
 	*return_value = tid->return_value;
-	tid->joined = 1;
+	tid->joined = 1;	
+	sleep(2);
+
+	int err = munmap(tid->stack_buffer, STACK_SIZE);
+	if (err != 0) {
+		return EINVAL;
+	}
+	
 	return 0;	
 }
 

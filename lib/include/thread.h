@@ -4,8 +4,6 @@
 #define SLEEP_TIME 500
 #define PAGE_SIZE 4096
 
-
-
 typedef long long thread_desc;
 
 typedef void*(*thread_func_t)(void*);
@@ -14,13 +12,13 @@ typedef struct thread_t {
     int thread_id;
     thread_func_t func;
     void *args;
+    void *stack_buffer;
+    void *stack_bottom;
     void *return_value;
     volatile int joined;   
     volatile int detached; 
     volatile int exited;
 }thread_t;
-
-
 
 int stack_create(off_t size, int thread_id, void **stack);
 

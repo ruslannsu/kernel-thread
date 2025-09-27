@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+
+ 
 void *thread_func(void *args) {
 	int *ret = malloc(sizeof(int));
 	if (ret == NULL) {
@@ -13,6 +15,7 @@ void *thread_func(void *args) {
 }
 
 int main() {
+	
 	printf("%d \n ", getpid());
 	thread_desc t;
 	int err = thread_create(&t, thread_func, "hello from args");
@@ -21,6 +24,7 @@ int main() {
 		printf("%s\n", strerror(err));
 	}
 	void *ret;
+	thread_detach(t);
 	err = thread_join(t, &ret);
 	if (err != 0) {
 		printf("%s\n", strerror(err));

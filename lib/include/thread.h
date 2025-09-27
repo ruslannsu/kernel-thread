@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #define STACK_SIZE 4096 * 16
+#define DETACHED_MAX_COUNT 512
 #define FILE_NAME_SIZE 128
 #define SLEEP_TIME 500
 #define PAGE_SIZE 4096
@@ -20,11 +21,18 @@ typedef struct thread_t {
     volatile int exited;
 }thread_t;
 
+typedef struct detached_threads {
+    size_t capacity;
+    size_t size; 
+    thread_t *detached_list[DETACHED_MAX_COUNT];
+}detached_threads;
+
+int thread_detach(thread_t *tid);
+
 int stack_create(off_t size, int thread_id, void **stack);
 
 int thread_create(thread_desc *tid, thread_func_t thread_func, void *args);
 
 int thread_join(thread_t *tid, void **return_value);
-
 
 

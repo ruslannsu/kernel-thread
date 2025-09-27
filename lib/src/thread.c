@@ -12,6 +12,14 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+
+
+detached_threads dt = {
+    .capacity = DETACHED_MAX_COUNT,
+    .size = 0,
+    .detached_list = {0}
+};
+
 int thread_func_wrapper(void *args) {
 	thread_t *thread_srtuct = (thread_t*)(args);
 	thread_srtuct->return_value = thread_srtuct->func(thread_srtuct->args);
@@ -58,6 +66,7 @@ int stack_create(off_t size, int thread_id, void **stack_ptr) {
 }
 
 
+
 int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args) {
 	static int thread_counter = 0;
 	++thread_counter;
@@ -100,6 +109,27 @@ int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args
 
 	return 0;
 	
+}
+
+
+int thread_detach(thread_t *tid) {
+	tid->detached = 1;
+	if (dt.size == dt.capacity) {
+		return ESRCH;	
+	}
+	dt.detached_list[dt.size] = tid;
+	
+	return 0;
+}
+
+int reaper() {
+	for (size_t i = 0; i != dt.capacity; ++i) {
+		int err = munmap(dt.detached_list[i]->stack_buffer, STACK_SIZE);
+		if (err != 0) {
+			return EINVAL;
+		}
+	}
+	return 0;
 }
 
 

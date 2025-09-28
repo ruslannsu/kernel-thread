@@ -3,24 +3,22 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <ucontext.h>
 
  
 void *thread_func(void *args, thread_t *tid) {
-	for (size_t i = 0; i != 1000000; ++i) {
+	for (size_t i = 0; i != 100000000; ++i) {
 		printf("%d %s \n", i, "hello from thread1");
-		if (i == 5000) {
-			thread_exit(tid);
-		}
-		usleep(500);
+		test_cancel(tid);
 	}
 	return 0;
 }
 
  
 void *thread_func2(void *args, thread_t *tid) {
-	for (size_t i = 0; i != 1000000; ++i) {
+	for (size_t i = 0; i != 100000000; ++i) {
 		printf("%d %s \n", i, "hello from thread2");
-		usleep(500);
+		test_cancel(tid);
 	}
 	return 0;
 }
@@ -33,9 +31,11 @@ int main() {
 	if (err != 0) {
 		printf("%s\n", strerror(err));
 	}
-	
-	
-	sleep(5);
+	thread_desc t2;
+	err = thread_create(&t2, thread_func2, "hello from args");
+	sleep(3);
+	thread_cancel(t);
+	sleep(100);
 
 	return 0;
 }

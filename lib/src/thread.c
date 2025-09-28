@@ -12,18 +12,11 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-
-
-
-
 int thread_func_wrapper(void *args) {
 	thread_t *thread_srtuct = (thread_t*)(args);
 	
 	if (setjmp(thread_srtuct->exit_point) == 0) {
 		thread_srtuct->return_value = thread_srtuct->func(thread_srtuct->args, thread_srtuct);
-	}
-	else {
-		return 0;
 	}
 	
 	thread_srtuct->exited = 1;
@@ -33,6 +26,7 @@ int thread_func_wrapper(void *args) {
 			usleep(SLEEP_TIME);
 		}
 	}
+
 	return 0;
 }
 
@@ -68,7 +62,6 @@ int stack_create(off_t size, int thread_id, void **stack_ptr) {
 }
 
 
-
 int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args) {
 	static int thread_counter = 0;
 	++thread_counter;
@@ -92,6 +85,7 @@ int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args
 	thread_struct->detached = 0;
 	thread_struct->return_value = NULL;
 	thread_struct->stack_buffer = stack_buffer;
+	thread_struct->canceled = 0;
 	
 	int thread_id = clone(thread_func_wrapper, (char*)stack_top - sizeof(thread_t), CLONE_VM |  CLONE_FILES | CLONE_THREAD | CLONE_SIGHAND | SIGCHLD, thread_struct);
 	if (thread_id == -1) {
@@ -112,9 +106,6 @@ int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args
 	return 0;
 	
 }
-
-
-
 
 
 int thread_join(thread_t *tid, void **return_value) {
@@ -147,7 +138,16 @@ int thread_join(thread_t *tid, void **return_value) {
 }
 
 
-int thread_exit(thread_t *tid) { 
+void thread_exit(thread_t *tid) { 
 	longjmp(tid->exit_point, 1);
-	return 0;
+}
+
+void thread_cancel(thread_t *tid) {
+	tid->canceled = 1;
+}
+
+void test_cancel(thread_t *tid) {
+	if (tid->canceled) {
+		thread_exit(tid);
+	} 
 }

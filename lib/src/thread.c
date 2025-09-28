@@ -14,15 +14,18 @@
 
 
 
-detached_threads dt = {
-    .capacity = DETACHED_MAX_COUNT,
-    .size = 0,
-    .detached_list = {0}
-};
+
 
 int thread_func_wrapper(void *args) {
 	thread_t *thread_srtuct = (thread_t*)(args);
-	thread_srtuct->return_value = thread_srtuct->func(thread_srtuct->args);
+	
+	if (setjmp(thread_srtuct->exit_point) == 0) {
+		thread_srtuct->return_value = thread_srtuct->func(thread_srtuct->args, thread_srtuct);
+	}
+	else {
+		return 0;
+	}
+	
 	thread_srtuct->exited = 1;
 
 	if (!thread_srtuct->detached) {
@@ -30,7 +33,6 @@ int thread_func_wrapper(void *args) {
 			usleep(SLEEP_TIME);
 		}
 	}
-
 	return 0;
 }
 
@@ -112,25 +114,7 @@ int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args
 }
 
 
-int thread_detach(thread_t *tid) {
-	tid->detached = 1;
-	if (dt.size == dt.capacity) {
-		return ESRCH;	
-	}
-	dt.detached_list[dt.size] = tid;
-	
-	return 0;
-}
 
-int reaper() {
-	for (size_t i = 0; i != dt.capacity; ++i) {
-		int err = munmap(dt.detached_list[i]->stack_buffer, STACK_SIZE);
-		if (err != 0) {
-			return EINVAL;
-		}
-	}
-	return 0;
-}
 
 
 int thread_join(thread_t *tid, void **return_value) {
@@ -163,6 +147,7 @@ int thread_join(thread_t *tid, void **return_value) {
 }
 
 
-
-	
-	
+int thread_exit(thread_t *tid) { 
+	longjmp(tid->exit_point, 1);
+	return 0;
+}

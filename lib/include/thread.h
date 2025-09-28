@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <setjmp.h>
 #define STACK_SIZE 4096 * 16
 #define DETACHED_MAX_COUNT 512
 #define FILE_NAME_SIZE 128
@@ -7,7 +8,7 @@
 
 typedef long long thread_desc;
 
-typedef void*(*thread_func_t)(void*);
+typedef void*(*thread_func_t)(void*, thread_desc);
 
 typedef struct thread_t {
     int thread_id;
@@ -19,6 +20,7 @@ typedef struct thread_t {
     volatile int joined;   
     volatile int detached; 
     volatile int exited;
+    jmp_buf exit_point;
 }thread_t;
 
 typedef struct detached_threads {
@@ -27,7 +29,7 @@ typedef struct detached_threads {
     thread_t *detached_list[DETACHED_MAX_COUNT];
 }detached_threads;
 
-int thread_detach(thread_t *tid);
+
 
 int stack_create(off_t size, int thread_id, void **stack);
 
@@ -35,4 +37,4 @@ int thread_create(thread_desc *tid, thread_func_t thread_func, void *args);
 
 int thread_join(thread_t *tid, void **return_value);
 
-
+int thread_exit(thread_t *tid);

@@ -5,31 +5,37 @@
 #include <string.h>
 
  
-void *thread_func(void *args) {
-	int *ret = malloc(sizeof(int));
-	if (ret == NULL) {
-		return NULL;
+void *thread_func(void *args, thread_t *tid) {
+	for (size_t i = 0; i != 1000000; ++i) {
+		printf("%d %s \n", i, "hello from thread1");
+		if (i == 5000) {
+			thread_exit(tid);
+		}
+		usleep(500);
 	}
-	*ret = 5;
-	return (void*)ret;
+	return 0;
+}
+
+ 
+void *thread_func2(void *args, thread_t *tid) {
+	for (size_t i = 0; i != 1000000; ++i) {
+		printf("%d %s \n", i, "hello from thread2");
+		usleep(500);
+	}
+	return 0;
 }
 
 int main() {
 	
-	printf("%d \n ", getpid());
 	thread_desc t;
 	int err = thread_create(&t, thread_func, "hello from args");
 
 	if (err != 0) {
 		printf("%s\n", strerror(err));
 	}
-	void *ret;
-	thread_detach(t);
-	err = thread_join(t, &ret);
-	if (err != 0) {
-		printf("%s\n", strerror(err));
-	}
+	
+	
+	sleep(5);
 
-	printf("%d\n", *((int*)ret));
 	return 0;
 }

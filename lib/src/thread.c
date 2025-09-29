@@ -30,8 +30,10 @@ int thread_func_wrapper(void *args) {
 	return 0;
 }
 
+
 int stack_create(off_t size, int thread_id, void **stack_ptr) {
 	int stack_fd;
+	int err;
 	char *stack_f = malloc(FILE_NAME_SIZE);
 	if (stack_f == NULL) {
 		return -1;
@@ -56,6 +58,10 @@ int stack_create(off_t size, int thread_id, void **stack_ptr) {
 	*stack_ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, stack_fd, 0);
 	if (*stack_ptr == MAP_FAILED) {
 		return -1;
+	}
+	err = mprotect(*stack_ptr, PAGE_SIZE, PROT_NONE);
+	if (err != 0) {
+		return EAGAIN;
 	}
 
 	return 0;
@@ -93,13 +99,7 @@ int thread_create(thread_desc *thread_ptr, thread_func_t thread_func, void *args
 	}
 
 	void *stack_bottom = (char*)stack_top - STACK_SIZE;
-	thread_struct->stack_bottom = stack_bottom;
-
-	err = mprotect(stack_bottom, PAGE_SIZE, PROT_NONE);
-	if (err != 0) {
-		return EAGAIN;
-	}
-	
+	thread_struct->stack_bottom = stack_bottom;	
 
 	*thread_ptr =  (thread_desc)thread_struct;
 

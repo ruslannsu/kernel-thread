@@ -24,7 +24,6 @@ void *thread_func2(void *args, thread_t *tid) {
 }
 
 int main() {
-	
 	thread_desc t;
 	int err = thread_create(&t, thread_func, "hello from args");
 
